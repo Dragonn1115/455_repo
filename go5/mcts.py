@@ -49,10 +49,10 @@ class TreeNode:
                 node.move = move
                 node.set_parent(self)
                 self.children[move] = node
-        node = TreeNode(opp_color)
-        node.move = PASS
-        node.set_parent(self)
-        self.children[PASS] = node
+        # node = TreeNode(opp_color)
+        # node.move = PASS
+        # node.set_parent(self)
+        # self.children[PASS] = node
         self.expanded = True
     
     def select_in_tree(self, exploration: float) -> Tuple[GO_POINT, 'TreeNode']:

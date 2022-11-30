@@ -333,7 +333,7 @@ class GtpConnection:
         self.sboard = self.board.copy()
         move = self.go_engine.get_move(self.board, color)
         self.board=self.sboard
-        signal.alarm(0)
+        # signal.alarm(0)
         # except Exception as e:
         #     # Time's up! Use the best move so far.
         #     move=self.go_engine.get_best_move()
@@ -396,8 +396,9 @@ def format_point(move):
     """
     assert MAXSIZE <= 25
     column_letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
-    if move == PASS:
-        return "PASS"
+    # print(move)
+    # if move == PASS:
+    #     return "PASS"
 
     row, col = move
 
