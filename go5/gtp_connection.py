@@ -36,7 +36,7 @@ class GtpConnection:
         self.go_engine = go_engine
         self.board = board
         self.timelimit = 30
-        signal.signal(signal.SIGALRM, self.handler)
+        # signal.signal(signal.SIGALRM, self.handler)
         self.commands = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -328,15 +328,15 @@ class GtpConnection:
         board_color = args[0].lower()
         color = color_to_int(board_color)
 
-        try:
-            signal.alarm(self.timelimit)
-            self.sboard = self.board.copy()
-            move = self.go_engine.get_move(self.board, color)
-            self.board=self.sboard
-            signal.alarm(0)
-        except Exception as e:
-            # Time's up! Use the best move so far.
-            move=self.go_engine.get_best_move()
+        # try:
+        # signal.alarm(self.timelimit)
+        self.sboard = self.board.copy()
+        move = self.go_engine.get_move(self.board, color)
+        self.board=self.sboard
+        signal.alarm(0)
+        # except Exception as e:
+        #     # Time's up! Use the best move so far.
+        #     move=self.go_engine.get_best_move()
 
 
         # no move to play on the board

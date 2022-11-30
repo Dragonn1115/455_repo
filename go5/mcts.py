@@ -116,6 +116,9 @@ class MCTS:
         board -- a copy of the board.
         color -- color to play
         """
+        print("input")
+        print(color)
+
         node = self.root
         # This will be True olny once for the root
         if not node.expanded:
@@ -128,7 +131,10 @@ class MCTS:
             node = next_node
         if not node.expanded:
             node.expand(board, color)
+
         
+        print("current")
+        print(board.current_player)
         assert board.current_player == color
         winner = self.rollout(board, color)
         node.update(winner)
