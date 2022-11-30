@@ -9,8 +9,7 @@ at the University of Edinburgh.
 import traceback
 import signal
 from sys import stdin, stdout, stderr
-from board_util import (
-    GoBoardUtil,
+from board_base import (
     BLACK,
     WHITE,
     EMPTY,
@@ -150,7 +149,7 @@ class GtpConnection:
         self.board.reset(size)
 
     def board2d(self):
-        return str(GoBoardUtil.get_twoD_board(self.board))
+        return str(get_twoD_board(self.board))
 
     def protocol_version_cmd(self, args):
         """ Return the GTP protocol version being used (always 2) """
@@ -262,7 +261,7 @@ class GtpConnection:
         get all the legal moves
         '''
 
-        legal_moves = GoBoardUtil.generate_legal_moves(self.board, self.board.current_player)
+        legal_moves = generate_legal_moves(self.board, self.board.current_player)
         coords = [point_to_coord(move, self.board.size) for move in legal_moves]
         # convert to point strings
         point_strs  = [ chr(ord('a') + col - 1) + str(row) for row, col in coords]
@@ -276,7 +275,7 @@ class GtpConnection:
         '''
 
         # get legal moves
-        legal_moves = GoBoardUtil.generate_legal_moves(self.board, self.board.current_player)
+        legal_moves = generate_legal_moves(self.board, self.board.current_player)
         # undetermined yet
         if len(legal_moves) > 0:
             self.respond('unknown')
