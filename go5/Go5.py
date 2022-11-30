@@ -11,7 +11,7 @@ from board_base import DEFAULT_SIZE, GO_POINT, GO_COLOR
 from board import GoBoard
 from feature_moves import FeatureMoves
 from gtp_connection import point_to_coord, format_point
-from gtp_connection_go5 import GtpConnectionGo5
+from gtp_connection import GtpConnection
 from mcts import MCTS, TreeNode
 from simulation_engine import GoSimulationEngine
 
@@ -83,6 +83,9 @@ class Go5(GoSimulationEngine):
         prev_nodes = 1
         return nodesAtDepth
 
+    def get_best_move(self):
+        return self.MCTS.get_best_move()
+
 def parse_args() -> Tuple[int, str, bool, bool]:
     """
     Parse the arguments of the program.
@@ -133,7 +136,7 @@ def run(sim: int, sim_rule: str, check_selfatari: bool, in_tree_knowledge: bool)
     """
     board: GoBoard = GoBoard(DEFAULT_SIZE)
     go_engine: Go5 = Go5(sim, sim_rule, check_selfatari, in_tree_knowledge)
-    con: GtpConnectionGo5 = GtpConnectionGo5(go_engine, board)
+    con: GtpConnection = GtpConnection(go_engine, board)
     con.start_connection()
 
 if __name__ == "__main__":

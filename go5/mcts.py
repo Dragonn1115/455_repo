@@ -214,3 +214,7 @@ class MCTS:
                 sys.stderr.write(s)
             sys.stderr.write("\n")
         sys.stderr.flush()
+
+    def get_best_move(self):
+        best_move, best_child = self.root.select_best_child()
+        return best_move
