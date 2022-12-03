@@ -178,6 +178,12 @@ class MCTS:
         self.simulation_policy = simulation_policy
         self.in_tree_knowledge = in_tree_knowledge
 
+
+        print("limit")
+        print(limit)
+        print("num_simulation")
+        print(num_simulation)
+        
         if not self.root.expanded:
             self.root.expand(board, color)
 

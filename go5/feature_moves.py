@@ -68,16 +68,16 @@ class FeatureMoves(object):
         # check_selfatari = kwargs.pop("check_selfatari", True)
         # if kwargs:
         #     raise TypeError("Unexpected **kwargs: %r" % kwargs)
-        nuPasses = 0
+
         for _ in range(limit):
             color = board.current_player
 
-            move = 
+            move = board.generate_simulate_move()
+            if move == None:
+                winner = board.true_winner()
+                return winner
             board.play_move(move, color)
-            if move == PASS:
-                nuPasses += 1
-            else:
-                nuPasses = 0
-            if nuPasses >= 2:
-                break
-        return winner(board, komi)
+
+        winner = board.score_winner()
+        return winner
+        # return winner(board, komi)
