@@ -19,6 +19,7 @@ from board_base import (
     coord_to_point,
 )
 import re
+from board_util import GoBoardUtil 
 
 class GtpConnection:
     def __init__(self, go_engine, board, debug_mode=False):
@@ -149,7 +150,7 @@ class GtpConnection:
         self.board.reset(size)
 
     def board2d(self):
-        return str(get_twoD_board(self.board))
+        return str(GoBoardUtil.get_twoD_board(self.board))
 
     def protocol_version_cmd(self, args):
         """ Return the GTP protocol version being used (always 2) """

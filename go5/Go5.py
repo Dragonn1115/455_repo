@@ -77,7 +77,7 @@ class Go5(GoSimulationEngine):
         return move
 
     def get_node_depth(self, root: TreeNode) -> List[int]:
-        MAX_DEPTH = 100
+        MAX_DEPTH = 10
         nodesAtDepth = [0] * MAX_DEPTH
         count_at_depth(root, 0, nodesAtDepth)
         prev_nodes = 1
