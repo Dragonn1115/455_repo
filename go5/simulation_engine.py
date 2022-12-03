@@ -29,8 +29,10 @@ class GoSimulationEngine(GoEngine):
         """
         Run a simulated game for a given move.
         """
-        print("ERROR: must override GoSimulationEngine.simulate in your engine")
-        return EMPTY
+        cboard: GoBoard = board.copy()
+        cboard.play_move(move, toplay)
+        opp: GO_COLOR = opponent(toplay)
+        return self.playGame(cboard, opp)
         
     def simulateMove(self, board: GoBoard, move: GO_POINT, toplay: GO_COLOR) -> int:
         """
@@ -43,3 +45,24 @@ class GoSimulationEngine(GoEngine):
                 wins += 1
         return wins
 
+    def playGame(self, board: GoBoard, color: GO_COLOR) -> GO_COLOR:
+        """
+        Run a simulation game.
+        """
+        nuPasses = 0
+        for _ in range(self.args.limit):
+            color = board.current_player
+            if self.args.random_simulation:
+                move = GoBoardUtil.generate_random_move(board, color, True)
+            else:
+                move = PatternUtil.generate_move_with_filter(
+                    board, self.args.use_pattern, self.args.check_selfatari
+                )
+            board.play_move(move, color)
+            if move == PASS:
+                nuPasses += 1
+            else:
+                nuPasses = 0
+            if nuPasses >= 2:
+                break
+        return winner(board, self.komi)

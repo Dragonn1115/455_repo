@@ -98,7 +98,10 @@ class TreeNode:
     
     def is_root(self) -> bool:
         return self.parent == self
-    
+
+    def __str__(self):
+        return str(self.move)    
+        #    str(self.color)+        str(self.n_visits)+        str(self.n_opp_wins)+str(self.parent)+str(self.children)+        str(self.expanded)
 
 class MCTS:
 
@@ -116,25 +119,20 @@ class MCTS:
         board -- a copy of the board.
         color -- color to play
         """
-        print("input")
-        print(color)
+
 
         node = self.root
         # This will be True olny once for the root
-        if not node.expanded:
-            node.expand(board, color)
+        # if not node.expanded:
+        #     node.expand(board, color)
         while not node.is_leaf():
             move, next_node = node.select_in_tree(self.exploration)
-            # assert board.play_move(move, color)
-            board.play_move(move, color)
+            assert board.play_move(move, color)
             color = opponent(color)
             node = next_node
-        if not node.expanded:
-            node.expand(board, color)
+            if not node.expanded:
+                node.expand(board, color)
 
-        
-        print("current")
-        print(board.current_player)
         assert board.current_player == color
         winner = self.rollout(board, color)
         node.update(winner)
@@ -147,11 +145,7 @@ class MCTS:
         winner = FeatureMoves.playGame(
             board,
             color,
-            komi=self.komi,
             limit=self.limit,
-            random_simulation=self.simulation_policy,
-            use_pattern=self.use_pattern,
-            check_selfatari=self.check_selfatari,
         )
         return winner
     
