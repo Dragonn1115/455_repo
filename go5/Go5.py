@@ -19,6 +19,7 @@ import numpy as np
 import argparse
 import sys
 from typing import List, Tuple
+import os
 
 def count_at_depth(node: TreeNode, depth: int, nodesAtDepth: List[int]) -> None:
     if not node.expanded:
@@ -45,15 +46,31 @@ class Go5(GoSimulationEngine):
         GoSimulationEngine.__init__(self, "Go5", 1.0,
                                     sim, move_select, sim_rule, 
                                     check_selfatari, limit)
-        self.MCTS = MCTS()
+
+        self.weights = []
+        location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        f = open(os.path.join(location,"weights.txt"), "r")
+        weights = f.read()
+        weights = weights.split('\n')
+        for i in range(len(weights)):
+            temp = (weights[i].split(" "))
+            try:
+                self.weights.append(temp[1])
+            except Exception:
+                pass
+
+        self.MCTS = MCTS(self.weights)
         self.exploration = exploration
         self.simulation_policy = sim_rule
         self.use_pattern = True
         self.in_tree_knowledge = in_tree_knowledge
         #self.parent = None
 
+
+
+
     def reset(self) -> None:
-        self.MCTS = MCTS()
+        self.MCTS = MCTS(self.weights)
 
     def update(self, move: GO_POINT) -> None:
         self.parent = self.MCTS.root
@@ -62,9 +79,11 @@ class Go5(GoSimulationEngine):
     def get_move(self, board: GoBoard, color: GO_COLOR) -> GO_POINT:
         # temp_length = len(board.generate_legal_moves())
         # if temp_length > 35:
-        #     self.args.limit = 30
-        # elif temp_length > 15:
-        #     self.args.limit = 15
+        #     self.exploration = 0.5
+        # elif temp_length > 10:
+        #     self.exploration = 0.5
+        # else:
+        #     self.exploration = 0.5
 
         move = self.MCTS.get_move(
             board,
@@ -108,7 +127,7 @@ def parse_args() -> Tuple[int, str, bool, bool]:
     parser.add_argument(
         "--sim",
         type=int,
-        default=100,
+        default=1000,
         help="number of simulations per move, so total playouts=sim*legal_moves",
     )
     parser.add_argument(

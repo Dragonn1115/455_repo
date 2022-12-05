@@ -8,10 +8,10 @@ Implements a basic Go board with functions to:
 
 The board uses a 1-dimensional representation with padding
 """
-import os
 import random
 import numpy as np
-from board_base import (
+from board_util import (
+    GoBoardUtil,
     BLACK,
     WHITE,
     EMPTY,
@@ -22,8 +22,7 @@ from board_base import (
     coord_to_point,
     where1d,
     MAXSIZE,
-    GO_POINT,
-    opponent
+    GO_POINT
 )
 
 """
@@ -43,21 +42,6 @@ class GoBoard(object):
         assert 2 <= size <= MAXSIZE
         self.reset(size)
 
-    @classmethod
-    def read_weight(self):
-        self.weights = []
-        location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        f = open(os.path.join(location,"weights.txt"), "r")
-        print(f)
-        weights = f.read()
-        weights = weights.split('\n')
-        for i in range(len(weights)):
-            temp = (weights[i].split(" "))
-            try:
-                self.weights.append(temp[1])
-            except Exception:
-                pass
-
     def reset(self, size):
         """
         Creates a start state, an empty board with given size.
@@ -71,7 +55,8 @@ class GoBoard(object):
         self.maxpoint = size * size + 3 * (size + 1)
         self.board = np.full(self.maxpoint, BORDER, dtype=GO_POINT)
         self._initialize_empty_points(self.board)
-        # self.weight = 0
+        self.policy = "random"
+        self.board_moves = []
 
     def copy(self):
         b = GoBoard(self.size)
@@ -80,7 +65,6 @@ class GoBoard(object):
         b.last_move = self.last_move
         b.last2_move = self.last2_move
         b.current_player = self.current_player
-        # b.weight = self.weight
         assert b.maxpoint == self.maxpoint
         b.board = np.copy(self.board)
         return b
@@ -131,7 +115,7 @@ class GoBoard(object):
         if not self._is_surrounded(point, color):
             return False
         # Eye-like shape. Check diagonals to detect false eye
-        opp_color = opponent(color)
+        opp_color = GoBoardUtil.opponent(color)
         false_count = 0
         at_edge = 0
         for d in self._diag_neighbors(point):
@@ -167,7 +151,7 @@ class GoBoard(object):
         """
         Find the block of given stone
         Returns a board of boolean markers which are set for
-        all the points in the block
+        all the points in the block 
         """
         color = self.get_color(stone)
         assert is_black_white(color)
@@ -196,7 +180,7 @@ class GoBoard(object):
         Check whether opponent block on nb_point is captured.
         Return a boolean
         True: The block is captured
-        False: The block is not captured
+        False: The block is not captured 
         """
         opp_block = self._block_of(nb_point)
         return not self._has_liberty(opp_block)
@@ -207,14 +191,14 @@ class GoBoard(object):
         Returns boolean: whether move was legal
         """
         assert is_black_white(color)
-
+        
         # Special cases
         if point == PASS:
             return False
         elif self.board[point] != EMPTY:
             return False
 
-        opp_color = opponent(color)
+        opp_color = GoBoardUtil.opponent(color)
         self.board[point] = color
         neighbors = self._neighbors(point)
         # check for capturing
@@ -225,18 +209,31 @@ class GoBoard(object):
                     # undo capturing move
                     self.board[point] = EMPTY
                     return False
-
+        
         # check for suicide
         block = self._block_of(point)
         if not self._has_liberty(block):  # undo suicide move
             self.board[point] = EMPTY
             return False
 
-        # self.modify_weight(point)
-        self.current_player = opponent(color)
+        self.current_player = GoBoardUtil.opponent(color)
         self.last2_move = self.last_move
         self.last_move = point
+        self.board_moves.append(point)
+
         return True
+
+    def winner(self):
+        moves = self.legalMoves()
+        if len(moves) == 0:
+            return GoBoardUtil.opponent(self.current_player)
+        else:
+            return None
+
+    def undoMove(self):
+        move = self.board_moves.pop()
+        self.board[move] = EMPTY
+        self.current_player = GoBoardUtil.opponent(self.current_player)
 
     def neighbors_of_color(self, point, color):
         """ List of neighbors of point of given color """
@@ -269,76 +266,65 @@ class GoBoard(object):
             board_moves.append(self.last_move)
         if self.last2_move != None and self.last2_move != PASS:
             board_moves.append(self.last2_move)
-            return
+            return 
 
-    def detect_weight_change(self,point):
-        temp_weight = 0
-        coe = 1
-        if self.current_player == WHITE:
-            coe = -1
+    def legalMoves(self):
+        return GoBoardUtil.generate_legal_moves(self, self.current_player)
 
-        for nb in self._neighbors(point):
-            if self.board[nb] == EMPTY:
-                temp_weight += coe
-            elif self.board[nb] == WHITE:
-                temp_weight += coe
-            elif self.board[nb] == BLACK:
-                temp_weight += coe
-        return temp_weight
+    def generate_neighbors_list(self, pt):
+        diag = self._diag_neighbors(pt)
+        hori = self._neighbors(pt)
+        neighbors = [diag[0],hori[2],diag[1],hori[0],hori[1],diag[2],hori[3],diag[3]]
+        colors = []
+        for point in neighbors:
+            colors.append(self.board[point])
+        return colors
 
-    def modify_weight(self,point):
-        temp = self.detect_weight_change(point)
-        self.weight += temp
-        return self.weight
+    def endOfGame(self):
+        moves = self.legalMoves()
+        if len(moves) == 0:
+            return True    
+        return False
 
-    def generate_legal_moves(self):
-        moves = self.get_empty_points()
-        legal_moves = []
-        for move in moves:
-            if self.is_legal(move, self.current_player):
-                legal_moves.append(move)
-        return legal_moves
+    # simulate one game from the current state until the end
+    def simulate(self):
+        i = 0
+        if not self.endOfGame():
+            while not self.endOfGame():
+                allMoves = self.legalMoves()
+                if self.policy == "random":
+                    random.shuffle(allMoves)
+                    self.play_move(allMoves[0],self.current_player)
 
-    def generate_simulate_move(self,weights):
-        legal_moves = self.generate_legal_moves()
+                elif self.policy == "pattern":
+                    prob = []
+                    for k in range(len(allMoves)):
 
-        if len(legal_moves) == 0:
-            return None
-        return random.choice(legal_moves)
+                        code_list = self.generate_neighbors_list(allMoves[k])
+                        reversed(code_list)
+                        x = 0
+                        for j in range(len(code_list)):
+                            x += code_list[j]*(pow(4,j))
+                        prob.append(float(self.weights[x]))
+                        final = [round(prob[j]/sum(prob),3) for j in range(len(prob))]
+                        
+                    X = random.randint(0,1)
+                    Y = 0
+                    for j in range(len(final)):
+                        Y+= final[j]
+                        if Y > X:
+                            self.play_move(allMoves[j],self.current_player)
+                            break
 
+                i += 1
+        return self.winner(), i
 
+    def resetToMoveNumber(self, moveNr):
+        numUndos = self.moveNumber() - moveNr
+        assert numUndos >= 0
+        for _ in range(numUndos):
+            self.undoMove()
+        assert self.moveNumber() == moveNr
 
-        if len(legal_moves) < 10:
-            return random.choice(legal_moves)
-
-        temp_weight = 200
-        coe = 1
-        final = None
-        if self.current_player == WHITE:
-            coe = -1
-
-        factor = 1/len(legal_moves)
-        for move in legal_moves:
-            temp = self.detect_weight_change(move)*coe
-            if temp < temp_weight:
-                final = move
-                if random.randint(0,1) < factor:
-                    return temp
-                temp_weight = temp
-                
-
-        if final is None and len(legal_moves) != 0:
-            return random.choice(legal_moves)
-            
-        return final 
-
-    def score_winner(self):
-        return self.true_winner
-        if self.weight > 0:
-            return BLACK
-        else:
-            return WHITE
-
-    def true_winner(self):
-        if len(self.generate_legal_moves()) == 0:
-            return opponent(self.current_player)
+    def moveNumber(self):
+        return len(self.board_moves)

@@ -85,14 +85,18 @@ class TreeNode:
         _n_visits = -1
         best_child = None
         second_best_child = None
-        for move, child in self.children.items():
-            if child.n_visits > _n_visits:
-                _n_visits = child.n_visits
-                second_best_child = best_child
-                best_child = child
+        try:
+            for move, child in self.children.items():
+                if child.n_visits > _n_visits:
+                    _n_visits = child.n_visits
+                    second_best_child = best_child
+                    best_child = child
+            return best_child.move, best_child
 
-        return best_child.move, best_child
-    
+        except Exception:
+            random_child = random.choice(self.children.items())
+            return random_child.move, random_child
+
     def update(self, winner: GO_COLOR) -> None:
         self.n_opp_wins += self.color != winner
         self.n_visits += 1
@@ -114,10 +118,11 @@ class TreeNode:
 
 class MCTS:
 
-    def __init__(self) -> None:
+    def __init__(self,weights) -> None:
         self.root: 'TreeNode' = TreeNode(BLACK)
         self.root.set_parent(self.root)
         self.toplay: GO_COLOR = BLACK
+        self.weights = weights
     
     def search(self, board: GoBoard, color: GO_COLOR) -> None:
         """
@@ -153,7 +158,7 @@ class MCTS:
         winner = FeatureMoves.playGame(
             board,
             color,
-            limit=self.limit,
+            self.weights
         )
         return winner
     
@@ -216,6 +221,19 @@ class MCTS:
                 if point in self.root.children:
                     pi[r][c] = self.root.children[point].n_visits
         pi = np.flipud(pi)
+        print("sim times")
+        print(pi)
+
+        pw = np.full((board.size, board.size), 0).astype(np.float32)
+        for r in range(board.size):
+            for c in range(board.size):
+                point = coord_to_point(r+1, c+1, board.size)
+                if point in self.root.children:
+                    pw[r][c] = self.root.children[point].n_opp_wins/self.root.children[point].n_visits
+        pw = np.flipud(pw)
+        print("winrate")
+        print(pw)
+
         for r in range(board.size):
             for c in range(board.size):
                 s = "{:5}".format(pi[r,c])
