@@ -5,9 +5,9 @@ import pexpect
 # player 1 plays first
 player1='go5/Go5.py'
 
-player2='random_player/nogo_random.py'
+# player2='random_player/nogo_random.py'
 # player2='nogo4/nogo4.py'
-
+player2 = 'ucb_player/nogo_ucb.py'
 # stats for win/timeout
 # note that timeout is considered lost
 win1=0
@@ -16,6 +16,8 @@ numTimeout=0
 # time limit per move
 TIMEOUT=30
 SAFETY_MARGIN=1
+
+numGame=5
 
 def getMove(p,color):
     '''
@@ -156,6 +158,6 @@ def saveResult():
     f.write("player 2 wins: {}\n".format(win2))
     f.close()
 
-playGames()
+playGames(numGame)
 outputResult()
 saveResult()

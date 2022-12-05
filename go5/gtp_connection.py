@@ -37,7 +37,7 @@ class GtpConnection:
         self.go_engine = go_engine
         self.board = board
         self.timelimit = 30
-        # signal.signal(signal.SIGALRM, self.handler)
+        signal.signal(signal.SIGALRM, self.handler)
         self.commands = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -262,7 +262,7 @@ class GtpConnection:
         get all the legal moves
         '''
 
-        legal_moves = generate_legal_moves(self.board, self.board.current_player)
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, self.board.current_player)
         coords = [point_to_coord(move, self.board.size) for move in legal_moves]
         # convert to point strings
         point_strs  = [ chr(ord('a') + col - 1) + str(row) for row, col in coords]
@@ -276,7 +276,7 @@ class GtpConnection:
         '''
 
         # get legal moves
-        legal_moves = generate_legal_moves(self.board, self.board.current_player)
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, self.board.current_player)
         # undetermined yet
         if len(legal_moves) > 0:
             self.respond('unknown')
@@ -315,6 +315,8 @@ class GtpConnection:
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
+
+            self.go_engine.update_play_move(board_move)
             self.respond()
         except Exception as e:
             self.respond("Error: {}".format(str(e)))
@@ -328,22 +330,20 @@ class GtpConnection:
 
         board_color = args[0].lower()
         color = color_to_int(board_color)
-
-        # try:
-        # signal.alarm(self.timelimit)
         self.sboard = self.board.copy()
-        move = self.go_engine.get_move(self.board, color)
-        self.board=self.sboard
-        # signal.alarm(0)
-        # except Exception as e:
-        #     # Time's up! Use the best move so far.
-        #     move=self.go_engine.get_best_move()
 
+        try:
+            signal.alarm(self.timelimit-1)
+            move = self.go_engine.get_move(self.board, color)
+            self.board=self.sboard
+            signal.alarm(0)
+        except Exception as e:
+            # Time's up! Use the best move so far.
+            # print(e)
+            # raise(e)
+            move=self.go_engine.get_best_move(self.board)
+            self.board=self.sboard
 
-        # no move to play on the board
-        if move is None:
-            self.respond('resign')
-            return
 
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)

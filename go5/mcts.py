@@ -16,6 +16,7 @@ from gtp_connection import point_to_coord, format_point
 import numpy as np
 import os, sys
 from typing import Dict, List, Tuple
+import random
 
 def uct(child_wins: int, child_visits: int, parent_visits: int, exploration: float) -> float:
     return child_wins / child_visits + exploration * np.sqrt(np.log(parent_visits) / child_visits)
@@ -49,10 +50,7 @@ class TreeNode:
                 node.move = move
                 node.set_parent(self)
                 self.children[move] = node
-        # node = TreeNode(opp_color)
-        # node.move = PASS
-        # node.set_parent(self)
-        # self.children[PASS] = node
+                
         self.expanded = True
     
     def select_in_tree(self, exploration: float) -> Tuple[GO_POINT, 'TreeNode']:
@@ -65,28 +63,40 @@ class TreeNode:
         A tuple of (move, next_node)
         """
         _child = None
-        _uct_val = -1
-        for move, child in self.children.items():
-            if child.n_visits == 0:
-                return child.move, child
-            uct_val = uct(child.n_opp_wins, child.n_visits, self.n_visits, exploration)
-            if uct_val > _uct_val:
-                _uct_val = uct_val
-                _child = child
-        return _child.move, _child
+        _uct_val = -9999
+        # coe = 1
+        # if self.color == WHITE:
+        #     coe = -1
+        try:
+            for move, child in self.children.items():
+                if child.n_visits == 0:
+                    return child.move, child
+                uct_val = uct(child.n_opp_wins, child.n_visits, self.n_visits, exploration)
+                # uct_val += self.weight*exploration*coe*0.4
+                if uct_val > _uct_val:
+                    _uct_val = uct_val
+                    _child = child
+            return _child.move, _child
+        except Exception:
+            random_child = random.choice(self.children.items())
+            return random_child.move, random_child
     
     def select_best_child(self) -> Tuple[GO_POINT, 'TreeNode']:
         _n_visits = -1
         best_child = None
+        second_best_child = None
         for move, child in self.children.items():
             if child.n_visits > _n_visits:
                 _n_visits = child.n_visits
+                second_best_child = best_child
                 best_child = child
+
         return best_child.move, best_child
     
     def update(self, winner: GO_COLOR) -> None:
         self.n_opp_wins += self.color != winner
         self.n_visits += 1
+        # self.weight = weight
         if not self.is_root():
             self.parent.update(winner)
     
@@ -101,7 +111,6 @@ class TreeNode:
 
     def __str__(self):
         return str(self.move)    
-        #    str(self.color)+        str(self.n_visits)+        str(self.n_opp_wins)+str(self.parent)+str(self.children)+        str(self.expanded)
 
 class MCTS:
 
@@ -119,19 +128,18 @@ class MCTS:
         board -- a copy of the board.
         color -- color to play
         """
-
-
         node = self.root
         # This will be True olny once for the root
-        # if not node.expanded:
-        #     node.expand(board, color)
+        if not node.expanded:
+            node.expand(board, color)
         while not node.is_leaf():
             move, next_node = node.select_in_tree(self.exploration)
             assert board.play_move(move, color)
             color = opponent(color)
             node = next_node
-            if not node.expanded:
-                node.expand(board, color)
+
+        if not node.expanded:
+            node.expand(board, color)
 
         assert board.current_player == color
         winner = self.rollout(board, color)
@@ -177,12 +185,6 @@ class MCTS:
         self.exploration = exploration
         self.simulation_policy = simulation_policy
         self.in_tree_knowledge = in_tree_knowledge
-
-
-        print("limit")
-        print(limit)
-        print("num_simulation")
-        print(num_simulation)
         
         if not self.root.expanded:
             self.root.expand(board, color)
